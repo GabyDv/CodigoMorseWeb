@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>DECODIFICADOR MORSE</title>
-  <style>       
+  <title>ENTRENADOR DE MORSE</title>
+  <style>
+    /* ==========================================================================
+       VARIABLES Y ESTILOS BASE (ESTÉTICA HARDWARE / PCB NEGRA Y DORADA)
+       ========================================================================== */
     :root {
       --bg-desk: #090a0d;
       --pcb-base: #131519;
@@ -34,9 +37,8 @@
     html, body {
       height: 100%;
       width: 100%;
-      background-color: var(--bg-desk9);
-      background-image: 
-        radial-gradient(circle at 50% 0%, #1a1e26 0%, #090a0d 75%);
+      background-color: var(--bg-desk);
+      background-image: radial-gradient(circle at 50% 0%, #1a1e26 0%, #090a0d 75%);
       color: #e5e7eb;
       font-family: var(--font-sans);
       overflow-x: hidden;
@@ -60,7 +62,6 @@
     .pcb-board {
       position: relative;
       background-color: var(--pcb-base);
-      /* Patrón sutil de fibra de vidrio / máscara de soldadura mate */
       background-image: 
         radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0),
         radial-gradient(rgba(212, 175, 55, 0.025) 1px, transparent 0);
@@ -88,7 +89,7 @@
       pointer-events: none;
     }
 
-    /* Ojales / Tornillos dorados en las 4 esquinas */
+    /* Tornillos / Ojales dorados en las 4 esquinas */
     .screw {
       position: absolute;
       width: 14px;
@@ -96,7 +97,7 @@
       border-radius: 50%;
       background: radial-gradient(circle at 35% 35%, #f5dc7f, #b68e22 65%, #5e470c 100%);
       border: 1px solid #2b2105;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.8), inset 0 0 2px rgba(255,255,255,0.5);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), inset 0 0 2px rgba(255, 255, 255, 0.5);
       z-index: 3;
       display: flex;
       align-items: center;
@@ -155,7 +156,7 @@
       padding: 6px 10px;
       box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.95), 0 1px 0 rgba(212, 175, 55, 0.25);
       display: grid;
-      grid-template-columns: 52px 1fr;
+      grid-template-columns: 54px 1fr;
       gap: 8px;
       align-items: center;
       z-index: 2;
@@ -218,7 +219,7 @@
     .oled-buffer::-webkit-scrollbar { display: none; }
 
     /* ==========================================================================
-       CONTENEDOR SVG DEL ÁRBOL BINARIO MORSE
+       CONTENEDOR SVG DEL ÁRBOL BINARIO MORSE (26 LETRAS A-Z)
        ========================================================================== */
     .tree-wrapper {
       width: 100%;
@@ -256,7 +257,7 @@
       filter: drop-shadow(0 0 4px rgba(255, 59, 48, 0.85));
     }
 
-    /* Etiquetas de letras en la PCB */
+    /* Etiquetas de letras grabadas en oro en la PCB */
     .node-letter {
       font-family: var(--font-mono);
       font-size: 13px;
@@ -271,7 +272,7 @@
       filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.95));
     }
 
-    /* LEDs (Punto = Círculo, Raya = Rectángulo) */
+    /* LEDs (Punto = Círculo Verde, Raya = Rectángulo Rojo/Naranja) */
     .led-pad {
       stroke: var(--gold);
       stroke-width: 1.4;
@@ -341,7 +342,7 @@
     }
 
     /* ==========================================================================
-       PANEL DE CONTROLES INFERIOR (TÁCTIL / MÓVIL)
+       PANEL DE CONTROLES INFERIOR (3 MODOS TÁCTILES)
        ========================================================================== */
     .control-deck {
       background: #14171d;
@@ -354,14 +355,15 @@
       gap: 10px;
     }
 
-    /* Selector de Modo (Tabs) */
+    /* Selector de 3 Modos (Tabs) */
     .mode-tabs {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       background: #0c0e12;
       padding: 3px;
       border-radius: 10px;
       border: 1px solid #222630;
+      gap: 3px;
     }
 
     .tab-btn {
@@ -369,12 +371,13 @@
       background: transparent;
       color: #8b949e;
       font-family: var(--font-sans);
-      font-size: 0.82rem;
+      font-size: 0.74rem;
       font-weight: 700;
-      padding: 8px 6px;
+      padding: 8px 4px;
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.18s ease;
+      white-space: nowrap;
     }
 
     .tab-btn.active {
@@ -424,9 +427,9 @@
       color: #111317;
       border: none;
       border-radius: 10px;
-      padding: 0 18px;
+      padding: 0 16px;
       font-weight: 800;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       letter-spacing: 0.04em;
       cursor: pointer;
       box-shadow: 0 3px 10px rgba(212, 175, 55, 0.3);
@@ -435,7 +438,7 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      min-width: 96px;
+      min-width: 92px;
     }
 
     .btn-play:active {
@@ -504,7 +507,7 @@
       color: var(--gold-bright);
     }
 
-    /* --- MODO 2: MANIPULADOR TÁCTIL --- */
+    /* --- MODO 2: MANIPULADOR DUAL (PUNTO / RAYA) --- */
     .keyer-pads {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -512,14 +515,14 @@
     }
 
     .pad-btn {
-      height: 68px;
+      height: 70px;
       border-radius: 14px;
       border: 2px solid transparent;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: 5px;
       cursor: pointer;
       transition: transform 0.06s ease, box-shadow 0.1s ease, background 0.1s ease;
       touch-action: manipulation;
@@ -574,7 +577,7 @@
       font-size: 0.72rem;
       font-weight: 700;
       letter-spacing: 0.08em;
-      opacity: 0.9;
+      opacity: 0.92;
     }
 
     .keyer-actions {
@@ -590,7 +593,7 @@
       font-family: var(--font-mono);
       font-size: 0.72rem;
       font-weight: 700;
-      padding: 8px 4px;
+      padding: 9px 4px;
       border-radius: 8px;
       cursor: pointer;
     }
@@ -601,6 +604,108 @@
     .action-btn.danger {
       color: #fca5a5;
     }
+
+    /* --- MODO 3: MODO SIMPLE (LLAVE TELEGRÁFICA CLÁSICA DE UN BOTÓN) --- */
+    .straight-key-btn {
+      position: relative;
+      width: 100%;
+      height: 78px;
+      border-radius: 14px;
+      border: 2px solid rgba(212, 175, 55, 0.55);
+      background: linear-gradient(180deg, #211d14 0%, #12100c 100%);
+      color: var(--gold-bright);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(243, 212, 107, 0.25);
+      transition: transform 0.06s ease, border-color 0.1s ease, background 0.1s ease, box-shadow 0.1s ease;
+      touch-action: manipulation;
+    }
+
+    .straight-key-btn.is-dot {
+      transform: scale(0.97);
+      background: linear-gradient(180deg, #163322 0%, #0d1f15 100%);
+      border-color: var(--led-dot-on);
+      color: var(--led-dot-on);
+      box-shadow: 0 0 20px rgba(0, 255, 102, 0.35), inset 0 0 12px rgba(0, 255, 102, 0.2);
+    }
+
+    .straight-key-btn.is-dash {
+      transform: scale(0.97);
+      background: linear-gradient(180deg, #3b1715 0%, #240d0c 100%);
+      border-color: var(--led-dash-on);
+      color: var(--led-dash-on);
+      box-shadow: 0 0 22px rgba(255, 59, 48, 0.4), inset 0 0 12px rgba(255, 59, 48, 0.22);
+    }
+
+    .sk-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 20px;
+    }
+
+    .sk-shape {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+      transition: all 0.08s ease;
+    }
+
+    .straight-key-btn.is-dot .sk-shape {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--led-dot-on);
+      box-shadow: 0 0 12px var(--led-dot-on);
+    }
+
+    .straight-key-btn.is-dash .sk-shape {
+      width: 42px;
+      height: 14px;
+      border-radius: 4px;
+      background: var(--led-dash-on);
+      box-shadow: 0 0 12px var(--led-dash-on);
+    }
+
+    .sk-title {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .sk-sub {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      opacity: 0.78;
+    }
+
+    .sk-progress-track {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .sk-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--led-dot-on);
+      transition: background-color 0.08s ease;
+    }
+
+    .straight-key-btn.is-dash .sk-progress-bar {
+      background: var(--led-dash-on);
+    }
   </style>
 </head>
 <body>
@@ -610,7 +715,7 @@
          TARJETA PCB DE CÓDIGO MORSE
          ====================================================================== -->
     <section class="pcb-board" aria-label="Placa decodificadora de código Morse">
-      <!-- Tornillos dorados -->
+      <!-- Tornillos dorados en esquinas -->
       <span class="screw tl"></span>
       <span class="screw tr"></span>
       <span class="screw bl"></span>
@@ -619,11 +724,11 @@
       <!-- Encabezado grabado -->
       <header class="pcb-header">
         <span class="pcb-title">CÓDIGO</span>
-        <span class="pcb-badge">650Hz · REV 2.4</span>
+        <span class="pcb-badge">650Hz · PCB v3.0</span>
         <span class="pcb-title">MORSE</span>
       </header>
 
-      <!-- Mini pantalla OLED -->
+      <!-- Visor OLED integrado -->
       <div class="oled-screen">
         <div class="oled-char-box">
           <span class="oled-char-label">LETRA</span>
@@ -635,12 +740,10 @@
         </div>
       </div>
 
-      <!-- Árbol Binario Interactivo en SVG -->
+      <!-- Árbol Binario Interactivo SVG (26 letras A-Z) -->
       <div class="tree-wrapper">
         <svg id="morseTree" viewBox="0 0 360 395" xmlns="http://www.w3.org/2000/svg">
-          <!-- Capa 1: Pistas de cobre doradas -->
           <g id="tracesLayer"></g>
-          <!-- Capa 2: Nodos (LEDs + Letras) -->
           <g id="nodesLayer"></g>
         </svg>
       </div>
@@ -649,7 +752,7 @@
       <div class="pcb-legend">
         <div class="legend-item">
           <span class="legend-dash"></span>
-          <span>IZQ = RAYA (-)</span>
+          <span>IZQ = RAYA (−)</span>
         </div>
         <div class="legend-item">
           <span>DER = PUNTO (·)</span>
@@ -659,15 +762,16 @@
     </section>
 
     <!-- ======================================================================
-         PANEL DE CONTROL TÁCTIL INFERIOR
+         PANEL DE CONTROL TÁCTIL INFERIOR (3 MODOS)
          ====================================================================== -->
     <section class="control-deck">
       <div class="mode-tabs">
         <button class="tab-btn active" id="tabPlayer" data-target="viewPlayer">▶ REPRODUCTOR</button>
-        <button class="tab-btn" id="tabKeyer" data-target="viewKeyer">⚡ MANIPULADOR</button>
+        <button class="tab-btn" id="tabKeyer" data-target="viewKeyer">⚡ DUAL</button>
+        <button class="tab-btn" id="tabSimple" data-target="viewSimple">🔘 SIMPLE</button>
       </div>
 
-      <!-- VISTA 1: REPRODUCTOR DE TEXTO A MORSE -->
+      <!-- MODO 1: REPRODUCTOR DE TEXTO A MORSE -->
       <div class="panel-view active" id="viewPlayer">
         <div class="input-row">
           <input
@@ -700,7 +804,7 @@
         </div>
       </div>
 
-      <!-- VISTA 2: MANIPULADOR TÁCTIL EN VIVO -->
+      <!-- MODO 2: MANIPULADOR DUAL (BOTONES SEPARADOS PUNTO Y RAYA) -->
       <div class="panel-view" id="viewKeyer">
         <div class="keyer-pads">
           <button class="pad-btn dot-pad" id="btnDot">
@@ -709,7 +813,7 @@
           </button>
           <button class="pad-btn dash-pad" id="btnDash">
             <span class="pad-symbol-dash"></span>
-            <span class="pad-label">RAYA ( - )</span>
+            <span class="pad-label">RAYA ( − )</span>
           </button>
         </div>
 
@@ -719,20 +823,39 @@
           <button class="action-btn danger" id="btnClearAll">✕ LIMPIAR</button>
         </div>
       </div>
+
+      <!-- MODO 3: MODO SIMPLE (LLAVE TELEGRÁFICA CLÁSICA DE UN BOTÓN) -->
+      <div class="panel-view" id="viewSimple">
+        <button class="straight-key-btn" id="btnStraightKey" aria-label="Pulsador telegráfico simple">
+          <div class="sk-indicator">
+            <span class="sk-shape" id="skShape"></span>
+          </div>
+          <span class="sk-title" id="skTitle">PULSAR LLAVE</span>
+          <span class="sk-sub" id="skSub">TOQUE (&lt;180ms) = · &nbsp;|&nbsp; MANTENER = −</span>
+          <div class="sk-progress-track">
+            <div class="sk-progress-bar" id="skProgressBar"></div>
+          </div>
+        </button>
+
+        <div class="keyer-actions">
+          <button class="action-btn" id="btnSimpleCommit">✓ LETRA</button>
+          <button class="action-btn" id="btnSimpleSpace">␣ ESPACIO</button>
+          <button class="action-btn danger" id="btnSimpleClear">✕ LIMPIAR</button>
+        </div>
+      </div>
     </section>
   </main>
 
   <script>
     /**
      * ==========================================================================
-     * DEFINICIÓN DEL ÁRBOL BINARIO DE CÓDIGO MORSE (LAYOUT FIEL A LA TARJETA PCB)
+     * 1. DEFINICIÓN DEL ÁRBOL BINARIO DE CÓDIGO MORSE (26 LETRAS A-Z)
      * - Izquierda (-) = Raya (LED Rectangular Rojo/Naranja)
      * - Derecha   (·) = Punto (LED Circular Verde)
      * ==========================================================================
      */
     const ROOT_POS = { x: 180, y: 20 };
 
-    // Coordenadas cuidadosamente distribuidas en viewBox (360 x 395) para evitar solapamientos
     const MORSE_NODES = {
       // Nivel 1
       "-":    { char: "T", x: 142, y: 38,  parent: "ROOT", type: "dash", lx: 142, ly: 22 },
@@ -754,7 +877,7 @@
       "..-":  { char: "U", x: 264, y: 105, parent: "..",   type: "dash", lx: 249, ly: 99 },
       "...":  { char: "S", x: 306, y: 38,  parent: "..",   type: "dot",  lx: 306, ly: 22 },
 
-      // Nivel 4 (Hojas del alfabeto A-Z)
+      // Nivel 4 (Hojas completas del alfabeto A-Z)
       "--.-": { char: "Q", x: 46,  y: 105, parent: "--.",  type: "dash", lx: 46,  ly: 126 },
       "--..": { char: "Z", x: 96,  y: 146, parent: "--.",  type: "dot",  lx: 111, ly: 150 },
       "-.--": { char: "Y", x: 46,  y: 182, parent: "-.-",  type: "dash", lx: 46,  ly: 166 },
@@ -769,7 +892,6 @@
       "....": { char: "H", x: 342, y: 38,  parent: "...",  type: "dot",  lx: 342, ly: 22 }
     };
 
-    // Mapa inverso: Letra -> Código Morse
     const CHAR_TO_MORSE = {};
     Object.entries(MORSE_NODES).forEach(([code, data]) => {
       CHAR_TO_MORSE[data.char] = code;
@@ -777,7 +899,7 @@
 
     /**
      * ==========================================================================
-     * RENDERIZADO DEL SVG DE LA PLACA PCB
+     * 2. RENDERIZADO VECTORIAL SVG DE LA PLACA PCB
      * ==========================================================================
      */
     const tracesLayer = document.getElementById("tracesLayer");
@@ -793,7 +915,7 @@
     }
 
     function buildPcbTree() {
-      // 1. Dibujar el ícono de Antena / Origen en la parte superior central
+      // Antena superior central de entrada de señal
       const antenna = createSvgEl("g", { class: "antenna-icon" });
       antenna.appendChild(createSvgEl("polygon", {
         points: `${ROOT_POS.x - 9},${ROOT_POS.y - 12} ${ROOT_POS.x + 9},${ROOT_POS.y - 12} ${ROOT_POS.x},${ROOT_POS.y}`,
@@ -809,7 +931,7 @@
       }));
       tracesLayer.appendChild(antenna);
 
-      // 2. Dibujar pistas de conexión entre cada nodo y su padre
+      // Pistas de cobre doradas entre nodos
       Object.entries(MORSE_NODES).forEach(([code, node]) => {
         const start = node.parent === "ROOT" ? { x: ROOT_POS.x, y: 38 } : MORSE_NODES[node.parent];
         const pathData = `M ${start.x} ${start.y} L ${node.x} ${node.y}`;
@@ -821,7 +943,7 @@
         tracesLayer.appendChild(trace);
       });
 
-      // 3. Dibujar nodos (LEDs circulares/rectangulares + Letras grabadas)
+      // Nodos (LEDs + Letras)
       Object.entries(MORSE_NODES).forEach(([code, node]) => {
         const g = createSvgEl("g", {
           class: "node-group",
@@ -829,7 +951,6 @@
           "data-code": code
         });
 
-        // Etiqueta de la letra
         const text = createSvgEl("text", {
           x: node.lx,
           y: node.ly,
@@ -840,7 +961,6 @@
         text.textContent = node.char;
         g.appendChild(text);
 
-        // LED Punto (Círculo) o LED Raya (Rectángulo redondeado)
         if (node.type === "dot") {
           const circle = createSvgEl("circle", {
             cx: node.x,
@@ -861,7 +981,7 @@
           g.appendChild(rect);
         }
 
-        // Permitir tocar cualquier nodo del árbol para escuchar su código
+        // Tocar cualquier letra del diagrama la reproduce al instante
         g.addEventListener("click", () => {
           if (!isPlaying) {
             previewNode(code);
@@ -874,7 +994,7 @@
 
     /**
      * ==========================================================================
-     * SINTETIZADOR DE AUDIO CW (WEB AUDIO API - 650 Hz SIN ARCHIVOS EXTERNOS)
+     * 3. SINTETIZADOR WEB AUDIO API A 650 Hz (SIN ARCHIVOS EXTERNOS)
      * ==========================================================================
      */
     let audioCtx = null;
@@ -901,7 +1021,7 @@
       osc.type = "sine";
       osc.frequency.setValueAtTime(650, now);
 
-      // Envolvente suave de 6ms para evitar clics mecánicos
+      // Envolvente suave para evitar chasquidos al abrir/cerrar el circuito
       gain.gain.setValueAtTime(0.0001, now);
       gain.gain.exponentialRampToValueAtTime(0.28, now + 0.008);
 
@@ -929,7 +1049,7 @@
 
     /**
      * ==========================================================================
-     * CONTROL VISUAL DE LOS LEDS Y DEL VISOR OLED
+     * 4. CONTROL DE ILUMINACIÓN DE LEDS Y VISOR OLED
      * ==========================================================================
      */
     const oledChar = document.getElementById("oledChar");
@@ -955,7 +1075,6 @@
         return;
       }
 
-      // Iluminar progresivamente cada paso del prefijo (ej: "-", "-.", "-.-")
       for (let i = 1; i <= code.length; i++) {
         const prefix = code.slice(0, i);
         const nodeEl = document.getElementById(`node_${prefix}`);
@@ -985,7 +1104,7 @@
 
     /**
      * ==========================================================================
-     * MODO 1: REPRODUCTOR DE TEXTO A CÓDIGO MORSE
+     * 5. MODO 1: REPRODUCTOR DE TEXTO A MORSE (CON CONTROL WPM Y CHIPS)
      * ==========================================================================
      */
     const textInput = document.getElementById("textInput");
@@ -1060,7 +1179,7 @@
       playbackAbortController = new AbortController();
       const signal = playbackAbortController.signal;
 
-      // Estándar PARIS: duración de 1 punto (dit) en ms = 1200 / WPM
+      // Estándar PARIS: dit = 1200 / WPM
       const wpm = parseInt(wpmSlider.value, 10);
       const ditMs = Math.round(1200 / wpm);
       const dahMs = ditMs * 3;
@@ -1083,7 +1202,7 @@
           }
 
           const code = CHAR_TO_MORSE[ch];
-          if (!code) continue; // Ignorar caracteres fuera de A-Z
+          if (!code) continue;
 
           let currentPrefix = "";
           for (let s = 0; s < code.length; s++) {
@@ -1103,18 +1222,16 @@
           decodedBufferText += ch;
           updateBufferDisplay();
 
-          // Mantener iluminada la letra completa durante la pausa entre letras
           await sleep(interLetterGap, signal);
           clearTreeLights();
         }
       } catch (err) {
-        // Reproducción detenida por el usuario
+        // Interrumpido por el usuario
       } finally {
         stopPlayback();
       }
     }
 
-    // Reproducir un nodo individual al tocarlo en el diagrama SVG
     async function previewNode(code) {
       const node = MORSE_NODES[code];
       if (!node) return;
@@ -1124,7 +1241,7 @@
 
     /**
      * ==========================================================================
-     * MODO 2: MANIPULADOR TÁCTIL (KEYER EN VIVO CON AUTO-DECODIFICACIÓN)
+     * 6. MODO 2: MANIPULADOR DUAL (PUNTO Y RAYA SEPARADOS)
      * ==========================================================================
      */
     const btnDot = document.getElementById("btnDot");
@@ -1158,7 +1275,6 @@
       if (isPlaying) stopPlayback();
       clearTimeout(autoCommitTimer);
 
-      // Máximo 4 niveles en el árbol A-Z; si excede, reinicia
       if (liveCode.length >= 4) {
         commitLiveLetter();
       }
@@ -1166,7 +1282,6 @@
       liveCode += symbol;
       illuminatePath(liveCode);
 
-      // Sonido y vibración según punto o raya
       const duration = symbol === "." ? 85 : 230;
       triggerHaptic(symbol === "." ? 25 : 65);
       startTone();
@@ -1174,13 +1289,12 @@
         stopTone();
       }, duration);
 
-      // Auto-confirmar letra tras 950ms de pausa
+      // Auto-decodificación tras 950ms de pausa
       autoCommitTimer = setTimeout(() => {
         commitLiveLetter();
       }, 950);
     }
 
-    // Eventos táctiles / puntero instantáneos (pointerdown evita retraso de 300ms en móviles)
     btnDot.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       btnDot.classList.add("pressed");
@@ -1197,21 +1311,21 @@
     btnDash.addEventListener("pointerup", () => btnDash.classList.remove("pressed"));
     btnDash.addEventListener("pointerleave", () => btnDash.classList.remove("pressed"));
 
-    btnCommitLetter.addEventListener("click", () => {
+    function handleActionCommit() {
       clearTimeout(autoCommitTimer);
       commitLiveLetter();
-    });
+    }
 
-    btnAddSpace.addEventListener("click", () => {
+    function handleActionSpace() {
       clearTimeout(autoCommitTimer);
       if (liveCode) commitLiveLetter();
       decodedBufferText += " ";
       updateBufferDisplay();
       oledChar.textContent = "␣";
       oledSeq.textContent = "ESPACIO";
-    });
+    }
 
-    btnClearAll.addEventListener("click", () => {
+    function handleActionClear() {
       clearTimeout(autoCommitTimer);
       liveCode = "";
       decodedBufferText = "";
@@ -1219,11 +1333,115 @@
       oledChar.textContent = "-";
       oledSeq.textContent = "LISTO";
       updateBufferDisplay();
-    });
+    }
+
+    btnCommitLetter.addEventListener("click", handleActionCommit);
+    btnAddSpace.addEventListener("click", handleActionSpace);
+    btnClearAll.addEventListener("click", handleActionClear);
 
     /**
      * ==========================================================================
-     * NAVEGACIÓN ENTRE PESTAÑAS (REPRODUCTOR / MANIPULADOR)
+     * 7. MODO 3: MODO SIMPLE (LLAVE TELEGRÁFICA CLÁSICA DE UN BOTÓN < 180ms)
+     * ==========================================================================
+     */
+    const btnStraightKey = document.getElementById("btnStraightKey");
+    const skTitle = document.getElementById("skTitle");
+    const skSub = document.getElementById("skSub");
+    const skProgressBar = document.getElementById("skProgressBar");
+    const btnSimpleCommit = document.getElementById("btnSimpleCommit");
+    const btnSimpleSpace = document.getElementById("btnSimpleSpace");
+    const btnSimpleClear = document.getElementById("btnSimpleClear");
+
+    const DASH_THRESHOLD_MS = 180;
+    let keyPressStartTime = 0;
+    let isStraightKeyDown = false;
+    let dashThresholdTimer = null;
+    let skProgressRaf = null;
+
+    function resetStraightKeyVisuals() {
+      btnStraightKey.classList.remove("is-dot", "is-dash");
+      skTitle.textContent = "PULSAR LLAVE";
+      skSub.textContent = "TOQUE (<180ms) = ·   |   MANTENER = −";
+      skProgressBar.style.width = "0%";
+      cancelAnimationFrame(skProgressRaf);
+      clearTimeout(dashThresholdTimer);
+    }
+
+    function updateStraightKeyProgress() {
+      if (!isStraightKeyDown) return;
+      const elapsed = performance.now() - keyPressStartTime;
+      const pct = Math.min(100, (elapsed / DASH_THRESHOLD_MS) * 100);
+      skProgressBar.style.width = `${pct}%`;
+      if (pct < 100) {
+        skProgressRaf = requestAnimationFrame(updateStraightKeyProgress);
+      }
+    }
+
+    function handleStraightKeyDown(e) {
+      e.preventDefault();
+      if (isStraightKeyDown) return;
+      if (isPlaying) stopPlayback();
+
+      clearTimeout(autoCommitTimer);
+      isStraightKeyDown = true;
+      keyPressStartTime = performance.now();
+
+      // Estado inicial: Punto (< 180ms)
+      btnStraightKey.classList.remove("is-dash");
+      btnStraightKey.classList.add("is-dot");
+      skTitle.textContent = "PUNTO ( · )";
+      skSub.textContent = "SUELTA PARA · O MANTÉN PARA −";
+      triggerHaptic(18);
+      startTone();
+
+      skProgressRaf = requestAnimationFrame(updateStraightKeyProgress);
+
+      // Cambio en tiempo real a Raya (>= 180ms)
+      dashThresholdTimer = setTimeout(() => {
+        if (!isStraightKeyDown) return;
+        btnStraightKey.classList.remove("is-dot");
+        btnStraightKey.classList.add("is-dash");
+        skTitle.textContent = "RAYA ( − )";
+        skSub.textContent = "SUELTA PARA REGISTRAR RAYA";
+        triggerHaptic(35);
+      }, DASH_THRESHOLD_MS);
+    }
+
+    function handleStraightKeyUp() {
+      if (!isStraightKeyDown) return;
+      isStraightKeyDown = false;
+
+      const pressDuration = performance.now() - keyPressStartTime;
+      stopTone();
+      resetStraightKeyVisuals();
+
+      const symbol = pressDuration >= DASH_THRESHOLD_MS ? "-" : ".";
+
+      if (liveCode.length >= 4) {
+        commitLiveLetter();
+      }
+
+      liveCode += symbol;
+      illuminatePath(liveCode);
+
+      // Auto-decodificación tras 950ms de pausa
+      autoCommitTimer = setTimeout(() => {
+        commitLiveLetter();
+      }, 950);
+    }
+
+    btnStraightKey.addEventListener("pointerdown", handleStraightKeyDown);
+    btnStraightKey.addEventListener("pointerup", handleStraightKeyUp);
+    btnStraightKey.addEventListener("pointerleave", handleStraightKeyUp);
+    btnStraightKey.addEventListener("pointercancel", handleStraightKeyUp);
+
+    btnSimpleCommit.addEventListener("click", handleActionCommit);
+    btnSimpleSpace.addEventListener("click", handleActionSpace);
+    btnSimpleClear.addEventListener("click", handleActionClear);
+
+    /**
+     * ==========================================================================
+     * 8. NAVEGACIÓN ENTRE PESTAÑAS (REPRODUCTOR / DUAL / SIMPLE)
      * ==========================================================================
      */
     const tabBtns = document.querySelectorAll(".tab-btn");
@@ -1232,6 +1450,11 @@
     tabBtns.forEach(btn => {
       btn.addEventListener("click", () => {
         if (isPlaying) stopPlayback();
+        if (isStraightKeyDown) {
+          isStraightKeyDown = false;
+          stopTone();
+          resetStraightKeyVisuals();
+        }
         clearTimeout(autoCommitTimer);
         liveCode = "";
         clearTreeLights();
@@ -1244,7 +1467,7 @@
       });
     });
 
-    // Inicializar el árbol PCB al cargar la página
+    // Inicializar el diagrama PCB al cargar la aplicación
     buildPcbTree();
   </script>
 </body>
