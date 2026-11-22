@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>DECODIFICADOR MORSE</title>
+  <style>       
+    :root {
+      --bg-desk: #090a0d;
+      --pcb-base: #131519;
+      --pcb-dark: #0c0d10;
+      --gold: #d4af37;
+      --gold-bright: #f3d46b;
+      --gold-dim: rgba(212, 175, 55, 0.35);
+      --gold-trace: rgba(212, 175, 55, 0.55);
+      --led-dot-off: #1b2e22;
+      --led-dot-on: #00ff66;
+      --led-dash-off: #331c1a;
+      --led-dash-on: #ff3b30;
+      --oled-bg: #050807;
+      --oled-text: #38f898;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      background-color: var(--bg-desk9);
+      background-image: 
+        radial-gradient(circle at 50% 0%, #1a1e26 0%, #090a0d 75%);
+      color: #e5e7eb;
+      font-family: var(--font-sans);
+      overflow-x: hidden;
+    }
+
+    /* Contenedor principal centrado tipo móvil */
+    .app-shell {
+      min-height: 100dvh;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 10px 12px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    /* ==========================================================================
+       TARJETA PCB (PLACA DE CIRCUITO IMPRESO NEGRA Y DORADA)
+       ========================================================================== */
+    .pcb-board {
+      position: relative;
+      background-color: var(--pcb-base);
+      /* Patrón sutil de fibra de vidrio / máscara de soldadura mate */
+      background-image: 
+        radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0),
+        radial-gradient(rgba(212, 175, 55, 0.025) 1px, transparent 0);
+      background-size: 16px 16px;
+      background-position: 0 0, 8px 8px;
+      border: 2px solid var(--gold);
+      border-radius: 18px;
+      padding: 12px 10px 10px;
+      box-shadow: 
+        0 14px 32px rgba(0, 0, 0, 0.75),
+        inset 0 0 0 2px #0b0c0e,
+        inset 0 0 18px rgba(0, 0, 0, 0.85);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Borde interior dorado fino tipo pista perimetral */
+    .pcb-board::before {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      border: 1px solid var(--gold-dim);
+      border-radius: 13px;
+      pointer-events: none;
+    }
+
+    /* Ojales / Tornillos dorados en las 4 esquinas */
+    .screw {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #f5dc7f, #b68e22 65%, #5e470c 100%);
+      border: 1px solid #2b2105;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.8), inset 0 0 2px rgba(255,255,255,0.5);
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .screw::after {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #0a0b0d;
+      border: 1px solid #8a6b19;
+    }
+    .screw.tl { top: 9px; left: 9px; }
+    .screw.tr { top: 9px; right: 9px; }
+    .screw.bl { bottom: 9px; left: 9px; }
+    .screw.br { bottom: 9px; right: 9px; }
+
+    /* Cabecera grabada de la PCB */
+    .pcb-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+      z-index: 2;
+    }
+
+    .pcb-title {
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 1.05rem;
+      letter-spacing: 0.18em;
+      color: var(--gold-bright);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+    }
+
+    .pcb-badge {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      color: var(--gold);
+      border: 1px solid var(--gold-dim);
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.08em;
+      background: rgba(212, 175, 55, 0.06);
+    }
+
+    /* ==========================================================================
+       VISOR MINI OLED INTEGRADO EN LA PCB
+       ========================================================================== */
+    .oled-screen {
+      margin: 0 14px;
+      background: var(--oled-bg);
+      border: 1.5px solid #2c3531;
+      border-radius: 8px;
+      padding: 6px 10px;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.95), 0 1px 0 rgba(212, 175, 55, 0.25);
+      display: grid;
+      grid-template-columns: 52px 1fr;
+      gap: 8px;
+      align-items: center;
+      z-index: 2;
+    }
+
+    .oled-char-box {
+      height: 44px;
+      border-right: 1px solid rgba(56, 248, 152, 0.2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .oled-char-label {
+      font-family: var(--font-mono);
+      font-size: 0.55rem;
+      color: rgba(56, 248, 152, 0.6);
+      letter-spacing: 0.08em;
+    }
+
+    .oled-char {
+      font-family: var(--font-mono);
+      font-size: 1.75rem;
+      font-weight: 800;
+      line-height: 1.05;
+      color: var(--oled-text);
+      text-shadow: 0 0 10px rgba(56, 248, 152, 0.65);
+    }
+
+    .oled-details {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 4px;
+      overflow: hidden;
+    }
+
+    .oled-morse-seq {
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: #ffd166;
+      min-height: 18px;
+      display: flex;
+      align-items: center;
+    }
+
+    .oled-buffer {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: rgba(229, 231, 235, 0.85);
+      white-space: nowrap;
+      overflow-x: auto;
+      scrollbar-width: none;
+      border-top: 1px dashed rgba(56, 248, 152, 0.18);
+      padding-top: 3px;
+    }
+    .oled-buffer::-webkit-scrollbar { display: none; }
+
+    /* ==========================================================================
+       CONTENEDOR SVG DEL ÁRBOL BINARIO MORSE
+       ========================================================================== */
+    .tree-wrapper {
+      width: 100%;
+      position: relative;
+      z-index: 2;
+      padding: 2px 2px 4px;
+    }
+
+    svg#morseTree {
+      width: 100%;
+      height: auto;
+      display: block;
+      overflow: visible;
+    }
+
+    /* Pistas de cobre del SVG */
+    .pcb-trace {
+      stroke: var(--gold-trace);
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke 0.14s ease, filter 0.14s ease, stroke-width 0.14s ease;
+    }
+
+    .pcb-trace.active-dot {
+      stroke: var(--led-dot-on);
+      stroke-width: 2.8;
+      filter: drop-shadow(0 0 4px rgba(0, 255, 102, 0.85));
+    }
+
+    .pcb-trace.active-dash {
+      stroke: var(--led-dash-on);
+      stroke-width: 2.8;
+      filter: drop-shadow(0 0 4px rgba(255, 59, 48, 0.85));
+    }
+
+    /* Etiquetas de letras en la PCB */
+    .node-letter {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 800;
+      fill: var(--gold-bright);
+      transition: fill 0.12s ease, filter 0.12s ease;
+      pointer-events: none;
+    }
+
+    .node-group.is-current .node-letter {
+      fill: #ffffff;
+      filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.95));
+    }
+
+    /* LEDs (Punto = Círculo, Raya = Rectángulo) */
+    .led-pad {
+      stroke: var(--gold);
+      stroke-width: 1.4;
+      transition: fill 0.1s ease, filter 0.12s ease, stroke 0.12s ease;
+      cursor: pointer;
+    }
+
+    .led-dot {
+      fill: var(--led-dot-off);
+    }
+
+    .led-dash {
+      fill: var(--led-dash-off);
+    }
+
+    /* Estado encendido de LED Punto (Verde Neón) */
+    .node-group.lit .led-dot {
+      fill: var(--led-dot-on);
+      stroke: #c8ffe0;
+      filter: drop-shadow(0 0 7px #00ff66) drop-shadow(0 0 14px rgba(0, 255, 102, 0.75));
+    }
+
+    /* Estado encendido de LED Raya (Rojo/Naranja Neón) */
+    .node-group.lit .led-dash {
+      fill: var(--led-dash-on);
+      stroke: #ffd5d2;
+      filter: drop-shadow(0 0 7px #ff3b30) drop-shadow(0 0 14px rgba(255, 59, 48, 0.8));
+    }
+
+    /* Destello extra en el nodo destino actual */
+    .node-group.is-current .led-pad {
+      stroke-width: 2.2;
+    }
+
+    /* Leyenda inferior dentro de la PCB */
+    .pcb-legend {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 18px 0;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--gold);
+      opacity: 0.85;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--led-dot-on);
+      box-shadow: 0 0 6px var(--led-dot-on);
+    }
+
+    .legend-dash {
+      width: 14px;
+      height: 7px;
+      border-radius: 2px;
+      background: var(--led-dash-on);
+      box-shadow: 0 0 6px var(--led-dash-on);
+    }
+
+    /* ==========================================================================
+       PANEL DE CONTROLES INFERIOR (TÁCTIL / MÓVIL)
+       ========================================================================== */
+    .control-deck {
+      background: #14171d;
+      border: 1px solid #262b36;
+      border-radius: 16px;
+      padding: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Selector de Modo (Tabs) */
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: #0c0e12;
+      padding: 3px;
+      border-radius: 10px;
+      border: 1px solid #222630;
+    }
+
+    .tab-btn {
+      border: none;
+      background: transparent;
+      color: #8b949e;
+      font-family: var(--font-sans);
+      font-size: 0.82rem;
+      font-weight: 700;
+      padding: 8px 6px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .tab-btn.active {
+      background: #1f242e;
+      color: var(--gold-bright);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(212, 175, 55, 0.35);
+    }
+
+    .panel-view {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .panel-view.active {
+      display: flex;
+    }
+
+    /* --- MODO 1: REPRODUCTOR --- */
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .text-input {
+      flex: 1;
+      background: #0b0d11;
+      border: 1.5px solid #2c3240;
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #ffffff;
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      outline: none;
+      transition: border-color 0.15s;
+      user-select: text;
+    }
+
+    .text-input:focus {
+      border-color: var(--gold);
+    }
+
+    .btn-play {
+      background: linear-gradient(180deg, #e5c150 0%, #b89124 100%);
+      color: #111317;
+      border: none;
+      border-radius: 10px;
+      padding: 0 18px;
+      font-weight: 800;
+      font-size: 0.88rem;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(212, 175, 55, 0.3);
+      transition: transform 0.08s, filter 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-width: 96px;
+    }
+
+    .btn-play:active {
+      transform: scale(0.96);
+    }
+
+    .btn-play.playing {
+      background: linear-gradient(180deg, #ff5449 0%, #c92a20 100%);
+      color: #ffffff;
+      box-shadow: 0 3px 10px rgba(255, 59, 48, 0.35);
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: #0e1015;
+      padding: 7px 12px;
+      border-radius: 10px;
+      border: 1px solid #222630;
+    }
+
+    .slider-label {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: #9ca3af;
+      white-space: nowrap;
+    }
+
+    .slider-val {
+      color: var(--gold-bright);
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--gold);
+      height: 5px;
+      background: #262b36;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .quick-chips {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .quick-chips::-webkit-scrollbar { display: none; }
+
+    .chip {
+      background: #1b2029;
+      border: 1px solid #2e3545;
+      color: #cbd5e1;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: 5px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .chip:active {
+      border-color: var(--gold);
+      color: var(--gold-bright);
+    }
+
+    /* --- MODO 2: MANIPULADOR TÁCTIL --- */
+    .keyer-pads {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .pad-btn {
+      height: 68px;
+      border-radius: 14px;
+      border: 2px solid transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: transform 0.06s ease, box-shadow 0.1s ease, background 0.1s ease;
+      touch-action: manipulation;
+    }
+
+    .pad-btn.dot-pad {
+      background: linear-gradient(180deg, #142b1e 0%, #0d1d14 100%);
+      border-color: rgba(0, 255, 102, 0.45);
+      color: var(--led-dot-on);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    }
+
+    .pad-btn.dot-pad:active, .pad-btn.dot-pad.pressed {
+      transform: scale(0.96);
+      background: #193d29;
+      border-color: var(--led-dot-on);
+      box-shadow: 0 0 18px rgba(0, 255, 102, 0.4);
+    }
+
+    .pad-btn.dash-pad {
+      background: linear-gradient(180deg, #2e1514 0%, #1e0d0c 100%);
+      border-color: rgba(255, 59, 48, 0.45);
+      color: var(--led-dash-on);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    }
+
+    .pad-btn.dash-pad:active, .pad-btn.dash-pad.pressed {
+      transform: scale(0.96);
+      background: #421a18;
+      border-color: var(--led-dash-on);
+      box-shadow: 0 0 18px rgba(255, 59, 48, 0.4);
+    }
+
+    .pad-symbol-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--led-dot-on);
+      box-shadow: 0 0 10px var(--led-dot-on);
+    }
+
+    .pad-symbol-dash {
+      width: 34px;
+      height: 14px;
+      border-radius: 4px;
+      background: var(--led-dash-on);
+      box-shadow: 0 0 10px var(--led-dash-on);
+    }
+
+    .pad-label {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      opacity: 0.9;
+    }
+
+    .keyer-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .action-btn {
+      background: #1c2029;
+      border: 1px solid #2e3442;
+      color: #d1d5db;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 8px 4px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .action-btn:active {
+      background: #282e3b;
+      border-color: var(--gold);
+    }
+    .action-btn.danger {
+      color: #fca5a5;
+    }
+  </style>
+</head>
+<body>
+
+  <main class="app-shell">
+    <!-- ======================================================================
+         TARJETA PCB DE CÓDIGO MORSE
+         ====================================================================== -->
+    <section class="pcb-board" aria-label="Placa decodificadora de código Morse">
+      <!-- Tornillos dorados -->
+      <span class="screw tl"></span>
+      <span class="screw tr"></span>
+      <span class="screw bl"></span>
+      <span class="screw br"></span>
+
+      <!-- Encabezado grabado -->
+      <header class="pcb-header">
+        <span class="pcb-title">CÓDIGO</span>
+        <span class="pcb-badge">650Hz · REV 2.4</span>
+        <span class="pcb-title">MORSE</span>
+      </header>
+
+      <!-- Mini pantalla OLED -->
+      <div class="oled-screen">
+        <div class="oled-char-box">
+          <span class="oled-char-label">LETRA</span>
+          <span class="oled-char" id="oledChar">-</span>
+        </div>
+        <div class="oled-details">
+          <div class="oled-morse-seq" id="oledSeq">LISTO</div>
+          <div class="oled-buffer" id="oledBuffer">TEXTO: _</div>
+        </div>
+      </div>
+
+      <!-- Árbol Binario Interactivo en SVG -->
+      <div class="tree-wrapper">
+        <svg id="morseTree" viewBox="0 0 360 395" xmlns="http://www.w3.org/2000/svg">
+          <!-- Capa 1: Pistas de cobre doradas -->
+          <g id="tracesLayer"></g>
+          <!-- Capa 2: Nodos (LEDs + Letras) -->
+          <g id="nodesLayer"></g>
+        </svg>
+      </div>
+
+      <!-- Leyenda inferior de la placa -->
+      <div class="pcb-legend">
+        <div class="legend-item">
+          <span class="legend-dash"></span>
+          <span>IZQ = RAYA (-)</span>
+        </div>
+        <div class="legend-item">
+          <span>DER = PUNTO (·)</span>
+          <span class="legend-dot"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================
+         PANEL DE CONTROL TÁCTIL INFERIOR
+         ====================================================================== -->
+    <section class="control-deck">
+      <div class="mode-tabs">
+        <button class="tab-btn active" id="tabPlayer" data-target="viewPlayer">▶ REPRODUCTOR</button>
+        <button class="tab-btn" id="tabKeyer" data-target="viewKeyer">⚡ MANIPULADOR</button>
+      </div>
+
+      <!-- VISTA 1: REPRODUCTOR DE TEXTO A MORSE -->
+      <div class="panel-view active" id="viewPlayer">
+        <div class="input-row">
+          <input
+            type="text"
+            id="textInput"
+            class="text-input"
+            maxlength="24"
+            value="HOLA"
+            placeholder="ESCRIBE AQUÍ..."
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button class="btn-play" id="btnPlayToggle">
+            <span id="playIcon">▶</span>
+            <span id="playText">PLAY</span>
+          </button>
+        </div>
+
+        <div class="slider-row">
+          <span class="slider-label">VELOCIDAD: <span class="slider-val" id="wpmDisplay">14 WPM</span></span>
+          <input type="range" id="wpmSlider" min="6" max="26" value="14" />
+        </div>
+
+        <div class="quick-chips">
+          <button class="chip" data-word="SOS">SOS</button>
+          <button class="chip" data-word="HOLA">HOLA</button>
+          <button class="chip" data-word="MORSE">MORSE</button>
+          <button class="chip" data-word="RADIO">RADIO</button>
+          <button class="chip" data-word="CQ DX">CQ DX</button>
+        </div>
+      </div>
+
+      <!-- VISTA 2: MANIPULADOR TÁCTIL EN VIVO -->
+      <div class="panel-view" id="viewKeyer">
+        <div class="keyer-pads">
+          <button class="pad-btn dot-pad" id="btnDot">
+            <span class="pad-symbol-dot"></span>
+            <span class="pad-label">PUNTO ( · )</span>
+          </button>
+          <button class="pad-btn dash-pad" id="btnDash">
+            <span class="pad-symbol-dash"></span>
+            <span class="pad-label">RAYA ( - )</span>
+          </button>
+        </div>
+
+        <div class="keyer-actions">
+          <button class="action-btn" id="btnCommitLetter">✓ LETRA</button>
+          <button class="action-btn" id="btnAddSpace">␣ ESPACIO</button>
+          <button class="action-btn danger" id="btnClearAll">✕ LIMPIAR</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    /**
+     * ==========================================================================
+     * DEFINICIÓN DEL ÁRBOL BINARIO DE CÓDIGO MORSE (LAYOUT FIEL A LA TARJETA PCB)
+     * - Izquierda (-) = Raya (LED Rectangular Rojo/Naranja)
+     * - Derecha   (·) = Punto (LED Circular Verde)
+     * ==========================================================================
+     */
+    const ROOT_POS = { x: 180, y: 20 };
+
+    // Coordenadas cuidadosamente distribuidas en viewBox (360 x 395) para evitar solapamientos
+    const MORSE_NODES = {
+      // Nivel 1
+      "-":    { char: "T", x: 142, y: 38,  parent: "ROOT", type: "dash", lx: 142, ly: 22 },
+      ".":    { char: "E", x: 218, y: 38,  parent: "ROOT", type: "dot",  lx: 218, ly: 22 },
+
+      // Nivel 2
+      "--":   { char: "M", x: 96,  y: 38,  parent: "-",    type: "dash", lx: 96,  ly: 22 },
+      "-.":   { char: "N", x: 142, y: 122, parent: "-",    type: "dot",  lx: 156, ly: 116 },
+      ".-":   { char: "A", x: 218, y: 122, parent: ".",    type: "dash", lx: 204, ly: 116 },
+      "..":   { char: "I", x: 264, y: 38,  parent: ".",    type: "dot",  lx: 264, ly: 22 },
+
+      // Nivel 3
+      "---":  { char: "O", x: 50,  y: 38,  parent: "--",   type: "dash", lx: 50,  ly: 22 },
+      "--.":  { char: "G", x: 96,  y: 105, parent: "--",   type: "dot",  lx: 110, ly: 99 },
+      "-.-":  { char: "K", x: 96,  y: 182, parent: "-.",   type: "dash", lx: 96,  ly: 166 },
+      "-..":  { char: "D", x: 142, y: 245, parent: "-.",   type: "dot",  lx: 156, ly: 239 },
+      ".--":  { char: "W", x: 218, y: 245, parent: ".-",   type: "dash", lx: 202, ly: 239 },
+      ".-.":  { char: "R", x: 264, y: 182, parent: ".-",   type: "dot",  lx: 264, ly: 166 },
+      "..-":  { char: "U", x: 264, y: 105, parent: "..",   type: "dash", lx: 249, ly: 99 },
+      "...":  { char: "S", x: 306, y: 38,  parent: "..",   type: "dot",  lx: 306, ly: 22 },
+
+      // Nivel 4 (Hojas del alfabeto A-Z)
+      "--.-": { char: "Q", x: 46,  y: 105, parent: "--.",  type: "dash", lx: 46,  ly: 126 },
+      "--..": { char: "Z", x: 96,  y: 146, parent: "--.",  type: "dot",  lx: 111, ly: 150 },
+      "-.--": { char: "Y", x: 46,  y: 182, parent: "-.-",  type: "dash", lx: 46,  ly: 166 },
+      "-.-.": { char: "C", x: 96,  y: 224, parent: "-.-",  type: "dot",  lx: 111, ly: 228 },
+      "-..-": { char: "X", x: 92,  y: 295, parent: "-..",  type: "dash", lx: 74,  ly: 299 },
+      "-...": { char: "B", x: 142, y: 342, parent: "-..",  type: "dot",  lx: 126, ly: 346 },
+      ".---": { char: "J", x: 218, y: 342, parent: ".--",  type: "dash", lx: 234, ly: 346 },
+      ".--.": { char: "P", x: 268, y: 295, parent: ".--",  type: "dot",  lx: 286, ly: 299 },
+      ".-..": { char: "L", x: 314, y: 182, parent: ".-.",  type: "dot",  lx: 332, ly: 186 },
+      "..-.": { char: "F", x: 264, y: 146, parent: "..-",  type: "dot",  lx: 280, ly: 150 },
+      "...-": { char: "V", x: 306, y: 105, parent: "...",  type: "dash", lx: 322, ly: 109 },
+      "....": { char: "H", x: 342, y: 38,  parent: "...",  type: "dot",  lx: 342, ly: 22 }
+    };
+
+    // Mapa inverso: Letra -> Código Morse
+    const CHAR_TO_MORSE = {};
+    Object.entries(MORSE_NODES).forEach(([code, data]) => {
+      CHAR_TO_MORSE[data.char] = code;
+    });
+
+    /**
+     * ==========================================================================
+     * RENDERIZADO DEL SVG DE LA PLACA PCB
+     * ==========================================================================
+     */
+    const tracesLayer = document.getElementById("tracesLayer");
+    const nodesLayer = document.getElementById("nodesLayer");
+    const SVG_NS = "http://www.w3.org/2000/svg";
+
+    function createSvgEl(tag, attrs = {}) {
+      const el = document.createElementNS(SVG_NS, tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        el.setAttribute(k, v);
+      }
+      return el;
+    }
+
+    function buildPcbTree() {
+      // 1. Dibujar el ícono de Antena / Origen en la parte superior central
+      const antenna = createSvgEl("g", { class: "antenna-icon" });
+      antenna.appendChild(createSvgEl("polygon", {
+        points: `${ROOT_POS.x - 9},${ROOT_POS.y - 12} ${ROOT_POS.x + 9},${ROOT_POS.y - 12} ${ROOT_POS.x},${ROOT_POS.y}`,
+        fill: "none",
+        stroke: "#d4af37",
+        "stroke-width": "1.6"
+      }));
+      antenna.appendChild(createSvgEl("line", {
+        x1: ROOT_POS.x, y1: ROOT_POS.y - 12,
+        x2: ROOT_POS.x, y2: ROOT_POS.y + 18,
+        stroke: "#d4af37",
+        "stroke-width": "1.8"
+      }));
+      tracesLayer.appendChild(antenna);
+
+      // 2. Dibujar pistas de conexión entre cada nodo y su padre
+      Object.entries(MORSE_NODES).forEach(([code, node]) => {
+        const start = node.parent === "ROOT" ? { x: ROOT_POS.x, y: 38 } : MORSE_NODES[node.parent];
+        const pathData = `M ${start.x} ${start.y} L ${node.x} ${node.y}`;
+        const trace = createSvgEl("path", {
+          d: pathData,
+          class: "pcb-trace",
+          id: `trace_${code}`
+        });
+        tracesLayer.appendChild(trace);
+      });
+
+      // 3. Dibujar nodos (LEDs circulares/rectangulares + Letras grabadas)
+      Object.entries(MORSE_NODES).forEach(([code, node]) => {
+        const g = createSvgEl("g", {
+          class: "node-group",
+          id: `node_${code}`,
+          "data-code": code
+        });
+
+        // Etiqueta de la letra
+        const text = createSvgEl("text", {
+          x: node.lx,
+          y: node.ly,
+          "text-anchor": "middle",
+          "dominant-baseline": "central",
+          class: "node-letter"
+        });
+        text.textContent = node.char;
+        g.appendChild(text);
+
+        // LED Punto (Círculo) o LED Raya (Rectángulo redondeado)
+        if (node.type === "dot") {
+          const circle = createSvgEl("circle", {
+            cx: node.x,
+            cy: node.y,
+            r: 6.5,
+            class: "led-pad led-dot"
+          });
+          g.appendChild(circle);
+        } else {
+          const rect = createSvgEl("rect", {
+            x: node.x - 9,
+            y: node.y - 5.5,
+            width: 18,
+            height: 11,
+            rx: 2.5,
+            class: "led-pad led-dash"
+          });
+          g.appendChild(rect);
+        }
+
+        // Permitir tocar cualquier nodo del árbol para escuchar su código
+        g.addEventListener("click", () => {
+          if (!isPlaying) {
+            previewNode(code);
+          }
+        });
+
+        nodesLayer.appendChild(g);
+      });
+    }
+
+    /**
+     * ==========================================================================
+     * SINTETIZADOR DE AUDIO CW (WEB AUDIO API - 650 Hz SIN ARCHIVOS EXTERNOS)
+     * ==========================================================================
+     */
+    let audioCtx = null;
+    let activeOsc = null;
+    let activeGain = null;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+    }
+
+    function startTone() {
+      ensureAudio();
+      stopTone();
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(650, now);
+
+      // Envolvente suave de 6ms para evitar clics mecánicos
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.28, now + 0.008);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+
+      activeOsc = osc;
+      activeGain = gain;
+    }
+
+    function stopTone() {
+      if (activeOsc && activeGain && audioCtx) {
+        const now = audioCtx.currentTime;
+        try {
+          activeGain.gain.cancelScheduledValues(now);
+          activeGain.gain.setValueAtTime(Math.max(activeGain.gain.value, 0.0001), now);
+          activeGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.01);
+          activeOsc.stop(now + 0.012);
+        } catch (e) {}
+      }
+      activeOsc = null;
+      activeGain = null;
+    }
+
+    /**
+     * ==========================================================================
+     * CONTROL VISUAL DE LOS LEDS Y DEL VISOR OLED
+     * ==========================================================================
+     */
+    const oledChar = document.getElementById("oledChar");
+    const oledSeq = document.getElementById("oledSeq");
+    const oledBuffer = document.getElementById("oledBuffer");
+
+    let decodedBufferText = "";
+
+    function clearTreeLights() {
+      document.querySelectorAll(".node-group").forEach(el => {
+        el.classList.remove("lit", "is-current");
+      });
+      document.querySelectorAll(".pcb-trace").forEach(el => {
+        el.classList.remove("active-dot", "active-dash");
+      });
+    }
+
+    function illuminatePath(code) {
+      clearTreeLights();
+      if (!code) {
+        oledChar.textContent = "-";
+        oledSeq.textContent = "· · ·";
+        return;
+      }
+
+      // Iluminar progresivamente cada paso del prefijo (ej: "-", "-.", "-.-")
+      for (let i = 1; i <= code.length; i++) {
+        const prefix = code.slice(0, i);
+        const nodeEl = document.getElementById(`node_${prefix}`);
+        const traceEl = document.getElementById(`trace_${prefix}`);
+        const symbol = prefix[prefix.length - 1];
+
+        if (nodeEl) {
+          nodeEl.classList.add("lit");
+          if (i === code.length) {
+            nodeEl.classList.add("is-current");
+          }
+        }
+        if (traceEl) {
+          traceEl.classList.add(symbol === "." ? "active-dot" : "active-dash");
+        }
+      }
+
+      const matchedNode = MORSE_NODES[code];
+      oledChar.textContent = matchedNode ? matchedNode.char : "?";
+      oledSeq.textContent = code.replace(/\./g, "· ").replace(/-/g, "− ");
+    }
+
+    function updateBufferDisplay() {
+      oledBuffer.textContent = `TEXTO: ${decodedBufferText || "_"}`;
+      oledBuffer.scrollLeft = oledBuffer.scrollWidth;
+    }
+
+    /**
+     * ==========================================================================
+     * MODO 1: REPRODUCTOR DE TEXTO A CÓDIGO MORSE
+     * ==========================================================================
+     */
+    const textInput = document.getElementById("textInput");
+    const btnPlayToggle = document.getElementById("btnPlayToggle");
+    const playIcon = document.getElementById("playIcon");
+    const playText = document.getElementById("playText");
+    const wpmSlider = document.getElementById("wpmSlider");
+    const wpmDisplay = document.getElementById("wpmDisplay");
+
+    let isPlaying = false;
+    let playbackAbortController = null;
+
+    wpmSlider.addEventListener("input", () => {
+      wpmDisplay.textContent = `${wpmSlider.value} WPM`;
+    });
+
+    document.querySelectorAll(".chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        textInput.value = chip.dataset.word;
+        if (isPlaying) stopPlayback();
+        startPlayback();
+      });
+    });
+
+    btnPlayToggle.addEventListener("click", () => {
+      if (isPlaying) {
+        stopPlayback();
+      } else {
+        startPlayback();
+      }
+    });
+
+    function sleep(ms, signal) {
+      return new Promise((resolve, reject) => {
+        if (signal && signal.aborted) return reject(new Error("Aborted"));
+        const id = setTimeout(resolve, ms);
+        if (signal) {
+          signal.addEventListener("abort", () => {
+            clearTimeout(id);
+            reject(new Error("Aborted"));
+          }, { once: true });
+        }
+      });
+    }
+
+    function stopPlayback() {
+      if (playbackAbortController) {
+        playbackAbortController.abort();
+        playbackAbortController = null;
+      }
+      stopTone();
+      isPlaying = false;
+      btnPlayToggle.classList.remove("playing");
+      playIcon.textContent = "▶";
+      playText.textContent = "PLAY";
+    }
+
+    async function startPlayback() {
+      const rawText = textInput.value.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      if (!rawText.trim()) return;
+
+      ensureAudio();
+      isPlaying = true;
+      btnPlayToggle.classList.add("playing");
+      playIcon.textContent = "■";
+      playText.textContent = "STOP";
+
+      decodedBufferText = "";
+      updateBufferDisplay();
+      clearTreeLights();
+
+      playbackAbortController = new AbortController();
+      const signal = playbackAbortController.signal;
+
+      // Estándar PARIS: duración de 1 punto (dit) en ms = 1200 / WPM
+      const wpm = parseInt(wpmSlider.value, 10);
+      const ditMs = Math.round(1200 / wpm);
+      const dahMs = ditMs * 3;
+      const intraSymbolGap = ditMs;
+      const interLetterGap = ditMs * 3;
+      const interWordGap = ditMs * 6;
+
+      try {
+        for (let idx = 0; idx < rawText.length; idx++) {
+          const ch = rawText[idx];
+
+          if (ch === " ") {
+            clearTreeLights();
+            oledChar.textContent = "␣";
+            oledSeq.textContent = "ESPACIO";
+            decodedBufferText += " ";
+            updateBufferDisplay();
+            await sleep(interWordGap, signal);
+            continue;
+          }
+
+          const code = CHAR_TO_MORSE[ch];
+          if (!code) continue; // Ignorar caracteres fuera de A-Z
+
+          let currentPrefix = "";
+          for (let s = 0; s < code.length; s++) {
+            const symbol = code[s];
+            currentPrefix += symbol;
+
+            illuminatePath(currentPrefix);
+            startTone();
+            await sleep(symbol === "." ? ditMs : dahMs, signal);
+            stopTone();
+
+            if (s < code.length - 1) {
+              await sleep(intraSymbolGap, signal);
+            }
+          }
+
+          decodedBufferText += ch;
+          updateBufferDisplay();
+
+          // Mantener iluminada la letra completa durante la pausa entre letras
+          await sleep(interLetterGap, signal);
+          clearTreeLights();
+        }
+      } catch (err) {
+        // Reproducción detenida por el usuario
+      } finally {
+        stopPlayback();
+      }
+    }
+
+    // Reproducir un nodo individual al tocarlo en el diagrama SVG
+    async function previewNode(code) {
+      const node = MORSE_NODES[code];
+      if (!node) return;
+      textInput.value = node.char;
+      await startPlayback();
+    }
+
+    /**
+     * ==========================================================================
+     * MODO 2: MANIPULADOR TÁCTIL (KEYER EN VIVO CON AUTO-DECODIFICACIÓN)
+     * ==========================================================================
+     */
+    const btnDot = document.getElementById("btnDot");
+    const btnDash = document.getElementById("btnDash");
+    const btnCommitLetter = document.getElementById("btnCommitLetter");
+    const btnAddSpace = document.getElementById("btnAddSpace");
+    const btnClearAll = document.getElementById("btnClearAll");
+
+    let liveCode = "";
+    let autoCommitTimer = null;
+
+    function triggerHaptic(ms) {
+      if (navigator.vibrate) {
+        try { navigator.vibrate(ms); } catch (e) {}
+      }
+    }
+
+    function commitLiveLetter() {
+      if (!liveCode) return;
+      const node = MORSE_NODES[liveCode];
+      const char = node ? node.char : "?";
+      decodedBufferText += char;
+      updateBufferDisplay();
+      liveCode = "";
+      setTimeout(() => {
+        if (!liveCode) clearTreeLights();
+      }, 220);
+    }
+
+    function inputMorseSymbol(symbol) {
+      if (isPlaying) stopPlayback();
+      clearTimeout(autoCommitTimer);
+
+      // Máximo 4 niveles en el árbol A-Z; si excede, reinicia
+      if (liveCode.length >= 4) {
+        commitLiveLetter();
+      }
+
+      liveCode += symbol;
+      illuminatePath(liveCode);
+
+      // Sonido y vibración según punto o raya
+      const duration = symbol === "." ? 85 : 230;
+      triggerHaptic(symbol === "." ? 25 : 65);
+      startTone();
+      setTimeout(() => {
+        stopTone();
+      }, duration);
+
+      // Auto-confirmar letra tras 950ms de pausa
+      autoCommitTimer = setTimeout(() => {
+        commitLiveLetter();
+      }, 950);
+    }
+
+    // Eventos táctiles / puntero instantáneos (pointerdown evita retraso de 300ms en móviles)
+    btnDot.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      btnDot.classList.add("pressed");
+      inputMorseSymbol(".");
+    });
+    btnDot.addEventListener("pointerup", () => btnDot.classList.remove("pressed"));
+    btnDot.addEventListener("pointerleave", () => btnDot.classList.remove("pressed"));
+
+    btnDash.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      btnDash.classList.add("pressed");
+      inputMorseSymbol("-");
+    });
+    btnDash.addEventListener("pointerup", () => btnDash.classList.remove("pressed"));
+    btnDash.addEventListener("pointerleave", () => btnDash.classList.remove("pressed"));
+
+    btnCommitLetter.addEventListener("click", () => {
+      clearTimeout(autoCommitTimer);
+      commitLiveLetter();
+    });
+
+    btnAddSpace.addEventListener("click", () => {
+      clearTimeout(autoCommitTimer);
+      if (liveCode) commitLiveLetter();
+      decodedBufferText += " ";
+      updateBufferDisplay();
+      oledChar.textContent = "␣";
+      oledSeq.textContent = "ESPACIO";
+    });
+
+    btnClearAll.addEventListener("click", () => {
+      clearTimeout(autoCommitTimer);
+      liveCode = "";
+      decodedBufferText = "";
+      clearTreeLights();
+      oledChar.textContent = "-";
+      oledSeq.textContent = "LISTO";
+      updateBufferDisplay();
+    });
+
+    /**
+     * ==========================================================================
+     * NAVEGACIÓN ENTRE PESTAÑAS (REPRODUCTOR / MANIPULADOR)
+     * ==========================================================================
+     */
+    const tabBtns = document.querySelectorAll(".tab-btn");
+    const panelViews = document.querySelectorAll(".panel-view");
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (isPlaying) stopPlayback();
+        clearTimeout(autoCommitTimer);
+        liveCode = "";
+        clearTreeLights();
+
+        tabBtns.forEach(b => b.classList.remove("active"));
+        panelViews.forEach(v => v.classList.remove("active"));
+
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.target).classList.add("active");
+      });
+    });
+
+    // Inicializar el árbol PCB al cargar la página
+    buildPcbTree();
+  </script>
+</body>
+</html>
